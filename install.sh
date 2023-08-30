@@ -8,7 +8,7 @@ plain='\033[0m'
 cur_dir=$(pwd)
 
 # check root
-[[ $EUID -ne 0 ]] && echo -e "${red}အမှား：${plain} This script must be run as the root user.！\n" && exit 1
+[[ $EUID -ne 0 ]] && echo -e "${red}❌ ❌ Mistake ❌ ❌：${plain} This script must be run as the root user.！\n" && exit 1
 
 # check os
 if [[ -f /etc/redhat-release ]]; then
@@ -163,8 +163,17 @@ install_x-ui() {
     | . \ |    |  |  . \  |    |        ——————— |     |  ————————
     |_|\_\|____|  |_|\__\ |____| ________   |    —————       |   ${plain}(____) ${red}♥${yellow}
                                                            
-                  ${green}https://t.me/nkka404${plain}
-"
+                  ${green}https://t.me/nkka404${plain}"
+    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
+    echo -e "${GREEN}       / |            ————————————            / |                    ❣️${PLAIN}"
+    echo -e "${GREEN}      /  |           |            |          /  |                   ❣️ ${PLAIN}"
+    echo -e "${GREEN}     /   |           |            |         /   |                  g   ${PLAIN}"
+    echo -e "${GREEN}    /    |           |            |        /    |                 t    ${PLAIN}"
+    echo -e "${GREEN}   /     |           |            |       /     |                t     ${PLAIN}"
+    echo -e "${GREEN}  / ____ |___        |            |      / ———— |————           m      ${PLAIN}"
+    echo -e "${GREEN}         |           |            |             |              P       ${PLAIN}"
+    echo -e "${GREEN}         |            ————————————              |         t.me/        ${PLAIN}"
+    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
     echo -e "----------------------------------------------"
 }
 
