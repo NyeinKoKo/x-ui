@@ -154,18 +154,17 @@ install_x-ui() {
     echo -e "${green}x-ui v${last_version}${plain} The installation is complete and the panel is activated.，"
     echo -e ""
     echo -e "💛 💛...Thank you for using...💛 💛 "
-    echo -e "----------------------------------------------"
     echo -e "\nProudly developed by ...${yellow}
-     _  __         _ _ __                         
-    | |/ /        |  |/ /                  /|    _____      /|
-    | ' /  __ _   |  ' /   —— —           / |   |     |    / |
-    |  <  |    |  |   <   |    |         /  |   |     |   /  |
-    | . \ |    |  |  . \  |    |        ——————— |     |  ————————
-    |_|\_\|____|  |_|\__\ |____| ________   |    —————       |   ${plain}(ɔ◔‿◔)ɔ ${red}♥${yellow}
-                                                           
-                  ${green}https://t.me/nkka404${plain}
-"
-    echo -e "----------------------------------------------"
+    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
+    echo -e "${GREEN}       // ||            ————————————            // ||                ❣️${PLAIN}"
+    echo -e "${GREEN}      //  ||           |            |          //  ||               ❣️ ${PLAIN}"
+    echo -e "${GREEN}     //   ||           |            |         //   ||              g   ${PLAIN}"
+    echo -e "${GREEN}    //    ||           |            |        //    ||             t    ${PLAIN}"
+    echo -e "${GREEN}   //     ||           |            |       //     ||            t     ${PLAIN}"
+    echo -e "${GREEN}  // ____ ||___        |            |      // ———— ||————       m      ${PLAIN}"
+    echo -e "${GREEN}          ||           |            |              ||          P       ${PLAIN}"
+    echo -e "${GREEN}          ||            ————————————               ||     t.me/        ${PLAIN}"
+    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
 }
 
 echo -e "${green}Start installing.${plain}"
