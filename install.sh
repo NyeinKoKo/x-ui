@@ -1,271 +1,173 @@
 #!/bin/bash
 
-export LANG=en_US.UTF-8
-
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-PLAIN="\033[0m"
-
-red() {
-    echo -e "\033[31m\033[01m$1\033[0m"
-}
-
-green() {
-    echo -e "\033[32m\033[01m$1\033[0m"
-}
-
-yellow() {
-    echo -e "\033[33m\033[01m$1\033[0m"
-}
-
-REGEX=("debian" "ubuntu" "centos|red hat|kernel|oracle linux|alma|rocky" "'amazon linux'" "fedora", "alpine")
-RELEASE=("Debian" "Ubuntu" "CentOS" "CentOS" "Fedora" "Alpine")
-PACKAGE_UPDATE=("apt-get update" "apt-get update" "yum -y update" "yum -y update" "yum -y update" "apk update -f")
-PACKAGE_INSTALL=("apt -y install" "apt -y install" "yum -y install" "yum -y install" "yum -y install" "apk add -f")
-PACKAGE_REMOVE=("apt -y remove" "apt -y remove" "yum -y remove" "yum -y remove" "yum -y remove" "apk del -f")
-PACKAGE_UNINSTALL=("apt -y autoremove" "apt -y autoremove" "yum -y autoremove" "yum -y autoremove" "yum -y autoremove" "apk del -f")
-
- $EUID -ne 0  && red "This script must be run as root user！" && exit 1
-
-CMD=("$(grep -i pretty_name /etc/os-release 2>/dev/null | cut -d \" -f2)" "$(hostnamectl 2>/dev/null | grep -i system | cut -d : -f2)" "$(lsb_release -sd 2>/dev/null)" "$(grep -i description /etc/lsb-release 2>/dev/null | cut -d \" -f2)" "$(grep . /etc/redhat-release 2>/dev/null)" "$(grep . /etc/issue 2>/dev/null | cut -d \\ -f1 | sed '/^[ ]*$/d')")
-
-for i in "${CMD[@]}"; do
-    SYS="$i" &&  -n $SYS  && break
-done
-
-for ((int = 0; int < ${#REGEX[@]}; int++)); do
-     $(echo "$SYS" | tr '[:upper:]' '[:lower:]') =~ ${REGEX[int]}  && SYSTEM="${RELEASE[int]}" &&  -n $SYSTEM  && break
-done
-
- -z $SYSTEM  && red "Script doesn't support your system. Please use a supported one" && exit 1
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+plain='\033[0m'
 
 cur_dir=$(pwd)
-os_version=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
 
- $SYSTEM == "CentOS" && ${os_version} -lt 7  && echo -e "Please use the system 7 or higher version of the system!" && exit 1
- $SYSTEM == "Fedora" && ${os_version} -lt 29  && echo -e "Please use Fedora 29 or higher version system!" && exit 1
- $SYSTEM == "Ubuntu" && ${os_version} -lt 16  && echo -e "Please use Ubuntu 16 or higher version system!" && exit 1
- $SYSTEM == "Debian" && ${os_version} -lt 9  && echo -e "Please use Debian 9 or higher version system!" && exit 1
+# check root
+[[ $EUID -ne 0 ]] && echo -e "${red}အမှား：${plain} This script must be run as the root user.！\n" && exit 1
 
-archAffix(){
-    case "$(uname -m)" in
-        x86_64 | x64 | amd64 ) echo 'amd64' ;;
-        armv8 | arm64 | aarch64 ) echo 'arm64' ;;
-        s390x ) echo 's390x' ;;
-        * ) red "Unsupported CPU architecture! " && rm -f install.sh && exit 1 ;;
-    esac
-}
+# check os
+if [[ -f /etc/redhat-release ]]; then
+    release="centos"
+elif cat /etc/issue | grep -Eqi "debian"; then
+    release="debian"
+elif cat /etc/issue | grep -Eqi "ubuntu"; then
+    release="ubuntu"
+elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
+    release="centos"
+elif cat /proc/version | grep -Eqi "debian"; then
+    release="debian"
+elif cat /proc/version | grep -Eqi "ubuntu"; then
+    release="ubuntu"
+elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
+    release="centos"
+else
+    echo -e "${red}System version not found Please contact 404.！${plain}\n" && exit 1
+fi
 
-info_bar(){
-    clear
-    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
-    echo -e "${GREEN}       / |            ————————————            / |                    ❣️${PLAIN}"
-    echo -e "${GREEN}      /  |           |            |          /  |                   ❣️ ${PLAIN}"
-    echo -e "${GREEN}     /   |           |            |         /   |                  g   ${PLAIN}"
-    echo -e "${GREEN}    /    |           |            |        /    |                 t    ${PLAIN}"
-    echo -e "${GREEN}   /     |           |            |       /     |                t     ${PLAIN}"
-    echo -e "${GREEN}  / ____ |___        |            |      / ———— |————           m      ${PLAIN}"
-    echo -e "${GREEN}         |           |            |             |              P       ${PLAIN}"
-    echo -e "${GREEN}         |            ————————————              |         t.me/        ${PLAIN}"
-    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
-    echo ""
-    echo -e "OS: ${GREEN} ${CMD} ${PLAIN}"
-    echo ""
-    sleep 2
-}
+arch=$(arch)
 
-check_status(){
-    yellow "Checking the IP configuration environment of the server. Please wait..." && sleep 1
-    WgcfIPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    WgcfIPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    if  $WgcfIPv4Status =~ "on"|"plus"  ||  $WgcfIPv6Status =~ "on"|"plus" ; then
-        wg-quick down wgcf >/dev/null 2>&1
-        v6=$(curl -s6m8 https://ip.gs -k)
-        v4=$(curl -s4m8 https://ip.gs -k)
-        wg-quick up wgcf >/dev/null 2>&1
+if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+    arch="amd64"
+elif [[ $arch == "aarch64" || $arch == "arm64" ]]; then
+    arch="arm64"
+elif [[ $arch == "s390x" ]]; then
+    arch="s390x"
+else
+    arch="amd64"
+    echo -e "${red}Architecture cannot be found; Use native architecture.: ${arch}${plain}"
+fi
+
+echo "Architecture: ${arch}"
+
+if [ $(getconf WORD_BIT) != '32' ] && [ $(getconf LONG_BIT) != '64' ]; then
+    echo "This software does not support 32-bit systems (x86), please use 64-bit system (x86_64). Contact the author if the detection is incorrect."
+    exit -1
+fi
+
+os_version=""
+
+# os version
+if [[ -f /etc/os-release ]]; then
+    os_version=$(awk -F'[= ."]' '/VERSION_ID/{print $3}' /etc/os-release)
+fi
+if [[ -z "$os_version" && -f /etc/lsb-release ]]; then
+    os_version=$(awk -F'[= ."]+' '/DISTRIB_RELEASE/{print $2}' /etc/lsb-release)
+fi
+
+if [[ x"${release}" == x"centos" ]]; then
+    if [[ ${os_version} -le 6 ]]; then
+        echo -e "${red}Please use CentOS 7 or higher system！${plain}\n" && exit 1
+    fi
+elif [[ x"${release}" == x"ubuntu" ]]; then
+    if [[ ${os_version} -lt 16 ]]; then
+        echo -e "${red}Please use it. Ubuntu 16 or later system！${plain}\n" && exit 1
+    fi
+elif [[ x"${release}" == x"debian" ]]; then
+    if [[ ${os_version} -lt 8 ]]; then
+        echo -e "${red}Please use it. Debian 8 or later system！${plain}\n" && exit 1
+    fi
+fi
+
+install_base() {
+    if [[ x"${release}" == x"centos" ]]; then
+        yum install wget curl tar -y
     else
-        v6=$(curl -s6m8 https://ip.gs -k)
-        v4=$(curl -s4m8 https://ip.gs -k)
-        if  -z $v4 && -n $v6 ; then
-            yellow "IPv6 only is detected. So the DNS64 parsing server has been added automatically"
-            echo -e "nameserver 2606:4700:4700::1111" > /etc/resolv.conf
-        fi
+        apt install wget curl tar -y
     fi
-    sleep 1
 }
 
-install_base(){
-    if  ! $SYSTEM == "CentOS" ; then
-        ${PACKAGE_UPDATE[int]}
+#This function will be called when user installed x-ui out of sercurity
+config_after_install() {
+    echo -e "${yellow}For security reasons, After the installation/update is completed, you need to forcefully change the port and account password.${plain}"
+    read -p "Confirm whether to continue?[y/n]": config_confirm
+    if [[ x"${config_confirm}" == x"y" || x"${config_confirm}" == x"Y" ]]; then
+        read -p "Specify your account name.:" config_account
+        echo -e "${yellow}Set your account name.:${config_account}${plain}"
+        read -p "Set your account password.:" config_password
+        echo -e "${yellow}Set your account password.:${config_password}${plain}"
+        read -p "Please specify panel access port.:" config_port
+        echo -e "${yellow}Your panel's access port is set.:${config_port}${plain}"
+        echo -e "${yellow}settings, Confirm the settings.${plain}"
+        /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password}
+        echo -e "${yellow}Account password setting is complete.{plain}"
+        /usr/local/x-ui/x-ui setting -port ${config_port}
+        echo -e "${yellow}Panel port setting is complete.${plain}"
+    else
+        echo -e "${red}cancelled, All settings are default settings; Please prepare in time.${plain}"
     fi
-    if  -z $(type -P curl) ; then
-        ${PACKAGE_INSTALL[int]} curl
-    fi
-    if  -z $(type -P tar) ; then
-        ${PACKAGE_INSTALL[int]} tar
-    fi   
-    check_status
 }
 
-download_xui(){
+install_x-ui() {
+    systemctl stop x-ui
+    cd /usr/local/
 
-    
     if [ $# == 0 ]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/iprodev/x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/iprodev/x-ui/main/config/version >/dev/null 2>&1)
-        if  -z "$last_version" ; then
-            red "Detecting the X-UI version failed, please make sure your server can connect to the Github API"
-            rm -f install.sh
+        last_version=$(curl -Ls "https://api.github.com/repos/vaxilu/x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        if [[ ! -n "$last_version" ]]; then
+            echo -e "${red}x-ui Could not find version This may be beyond the limits of the Github API; Please try again later. or to install x-ui Set the version manually.${plain}"
             exit 1
         fi
-        yellow "The latest version of X-UI is detected: $ {last_version}, starting installation..."
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(archAffix).tar.gz https://github.com/iprodev/x-ui/releases/download/${last_version}/x-ui-linux-$(archAffix).tar.gz
-        if  $? -ne 0 ; then
-            red "Download the X-UI failure, please make sure your server can connect and download files from github"
-            rm -f install.sh
+        echo -e "Found the latest version of x-ui.：${last_version}，Start installing."
+        wget -N --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz https://github.com/vaxilu/x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}Failed to download x-ui Make sure your server can download Github files.${plain}"
             exit 1
         fi
     else
         last_version=$1
-        url="https://github.com/iprodev/x-ui/releases/download/${last_version}/x-ui-linux-$(archAffix).tar.gz"
-        yellow "Starting installation x-ui $1"
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(archAffix).tar.gz ${url}
-        if  $? -ne 0 ; then
-            red "Download X-UI V $ 1 Failure, please make sure this version exists"
-            rm -f install.sh
+        url="https://github.com/vaxilu/x-ui/releases/download/${last_version}/x-ui-linux-${arch}.tar.gz"
+        echo -e "Start installing x-ui v$1"
+        wget -N --no-check-certificate -O /usr/local/x-ui-linux-${arch}.tar.gz ${url}
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}Download it. x-ui v$1 failed, Make sure you have this version.{plain}"
             exit 1
         fi
     fi
-    
-    cd /usr/local/
-    tar zxvf x-ui-linux-$(archAffix).tar.gz
-    rm -f x-ui-linux-$(archAffix).tar.gz
-    
+
+    if [[ -e /usr/local/x-ui/ ]]; then
+        rm /usr/local/x-ui/ -rf
+    fi
+
+    tar zxvf x-ui-linux-${arch}.tar.gz
+    rm x-ui-linux-${arch}.tar.gz -f
     cd x-ui
-    chmod +x x-ui bin/xray-linux-$(archAffix)
+    chmod +x x-ui bin/xray-linux-${arch}
     cp -f x-ui.service /etc/systemd/system/
-    
-    wget -N --no-check-certificate https://raw.githubusercontent.com/iprodev/x-ui/main/x-ui.sh -O /usr/bin/x-ui
+    wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/vaxilu/x-ui/main/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
-}
-
-panel_config() {
-    yellow "For security reasons, after the installation/ update, you need to remember the port and the account password"
-    read -rp "Please set the login user name [default is a random user name]: " config_account
-     -z $config_account  && config_account=$(date +%s%N | md5sum | cut -c 1-8)
-    read -rp "Please set the login password. Don't include spaces [default is a random password]: " config_password
-     -z $config_password  && config_password=$(date +%s%N | md5sum | cut -c 1-8)
-    read -rp "Please set the panel access port [default is a random port]: " config_port
-     -z $config_port  && config_port=$(shuf -i 1000-65535 -n 1)
-    until  -z $(ss -ntlp | awk '{print $4}' | grep -w "$config_port") ; do
-        if  -n $(ss -ntlp | awk '{print $4}' | grep -w  "$config_port") ; then
-            yellow "The port you set is currently in uese, please reassign another port"
-            read -rp "Please set the panel access port [default ia a random port]: " config_port
-             -z $config_port  && config_port=$(shuf -i 1000-65535 -n 1)
-        fi
-    done
-    /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
-    /usr/local/x-ui/x-ui setting -port ${config_port} >/dev/null 2>&1
-}
-
-install_xui() {
-    info_bar
-    
-    if  -e /usr/local/x-ui/ ; then
-        yellow "The X-UI panel has been installed at present. Please confirm you want to update it. There would not be any data loss."
-        read -rp "Please enter the option [y/n, default n]: " yn
-        if  $yn =~ "Y"|"y" ; then
-            cd
-            mv /etc/x-ui/x-ui.db /etc/x-ui-english.db.bak # Backing up Chinese X-UI db (if any)
-            mv /etc/x-ui-english/x-ui-english.db /etc/x-ui-english.db.bak # Backing up English X-UI db 
-            systemctl stop x-ui
-            systemctl disable x-ui
-            rm /etc/systemd/system/x-ui.service -f
-            systemctl daemon-reload
-            systemctl reset-failed 
-            rm /etc/x-ui/ -rf
-            rm /usr/local/x-ui/ -rf
-            rm /usr/bin/x-ui -f
-        else
-            red "Cancelled. The script exits!"
-            exit 1
-        fi
-    fi
-    
-    systemctl stop x-ui >/dev/null 2>&1
-    
-    install_base
-    download_xui $1
-    
-    cd
-    mkdir /etc/x-ui-english #makidng a directory to import the backup
-    mv /etc/x-ui-english.db.bak /etc/x-ui-english/x-ui-english.db # Importing the backed up db
-    
-    panel_config
-    
+    config_after_install
+    #echo -e "If it is a new installation, the default web port is ${green}54321${plain}, and the default username and password are ${green}admin${plain}"
+    #echo -e "Please ensure that this port is not occupied by other programs, ${yellow} and ensure that port 54321 has been released ${plain}"
+    # echo -e "If you want to modify 54321 to another port, enter the x-ui command to modify, and also make sure that the port you modified is also allowed"
+    #echo -e ""
+    #echo -e "If updating the panel, access the panel as you did before"
+    #echo -e ""
     systemctl daemon-reload
-    systemctl enable x-ui >/dev/null 2>&1
-    systemctl start x-ui 
-    systemctl restart x-ui
-    
-    cd $cur_dir
-    rm -f install.sh
-    green "X-UI v${last_version} Installation / Upgrade is Completed, The Panel has been Started"
+    systemctl enable x-ui
+    systemctl start x-ui
+    echo -e "${green}x-ui v${last_version}${plain} The installation is complete and the panel is activated.，"
     echo -e ""
-    echo -e "${GREEN} --------------------------------------------------------------------  ${PLAIN}"
-    echo -e "${GREEN}   __   __           _    _ _____    ______             _ _     _      ${PLAIN}"
-    echo -e "${GREEN}   \ \ / /          | |  | |_   _|  |  ____|           | (_)   | |     ${PLAIN}"
-    echo -e "${GREEN}    \ V /   ______  | |  | | | |    | |__   _ __   __ _| |_ ___| |__   ${PLAIN}"
-    echo -e "${GREEN}     > <   |______| | |  | | | |    |  __| |  _ \ / _  | | / __|  _ \  ${PLAIN}"
-    echo -e "${GREEN}    / . \           | |__| |_| |_   | |____| | | | (_| | | \__ \ | | | ${PLAIN}"
-    echo -e "${GREEN}   /_/ \_\           \____/|_____|  |______|_| |_|\__, |_|_|___/_| |_| ${PLAIN}"
-    echo -e "${GREEN}                                                  __/ |                ${PLAIN}"
-    echo -e "${GREEN}                                                 |___/                 ${PLAIN}"
-    echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
-    echo -e ""
-    echo -e "------------------------------------------------------------------------------"
-    echo -e "X-UI MANAGEMENT SCRIPT USAGE: "
-    echo -e "------------------------------------------------------------------------------"
-    echo -e "x-ui              - Show the management menu"
-    echo -e "x-ui start        - Start X-UI panel"
-    echo -e "x-ui stop         - Stop X-UI panel"
-    echo -e "x-ui restart      - Restart X-UI panel"
-    echo -e "x-ui status       - View X-UI status"
-    echo -e "x-ui enable       - Set X-UI boot self-starting"
-    echo -e "x-ui disable      - Cancel X-UI boot self-starting"
-    echo -e "x-ui log          - View x-ui log"
-    echo -e "x-ui v2-ui        - Migrate V2-UI to X-UI"
-    echo -e "x-ui update       - Update X-UI panel"
-    echo -e "x-ui install      - Install X-UI panel"
-    echo -e "x-ui uninstall    - Uninstall X-UI panel"
-    echo -e "------------------------------------------------------------------------------"
-    echo -e "------------------------------------------------------------------------------"
-    echo -e "Please do consider supporting authors"
-    echo -e "------------------------------------------------------------------------------"
-    echo -e "vaxilu            - https://github.com/vaxilu" 
-    echo -e "taffychan         - https://github.com/taffychan"  
-    echo -e "Hossin Asaadi     - https://github.com/hossinasaadi"
-    echo -e "Yu FranzKafka     - https://github.com/FranzKafkaYu"
-    echo -e "Niduka Akalanka   - https://github.com/NidukaAkalanka"
-    echo -e "iProDev           - https://github.com/iprodev"
-    echo -e "--------------------------------------------------------------------------------"
-    show_login_info
-    echo -e ""
-    yellow "(If you cannot access the X-UI panel, first enter the X-UI command in the SSH command line, and then select the 17 option to let go of the firewall port)"
+    echo -e "💛 💛...Thank you for using...💛 💛 "
+    echo -e "----------------------------------------------"
+    echo -e "\nProudly developed by ...${yellow}
+     _  __         _ _ __                         
+    | |/ /        |  |/ /                  /|    _____      /|
+    | ' /  __ _   |  ' /   —— —           / |   |     |    / |
+    |  <  |    |  |   <   |    |         /  |   |     |   /  |
+    | . \ |    |  |  . \  |    |        ——————— |     |  ————————
+    |_|\_\|____|  |_|\__\ |____| ________   |    —————       |   ${plain}(____) ${red}♥${yellow}
+                                                           
+                  ${green}https://t.me/nkka404${plain}
+"
+    echo -e "----------------------------------------------"
 }
 
-show_login_info(){
-    if  -n $v4 && -z $v6 ; then
-        echo -e "Panel IPv4 login address is: ${GREEN}http://$v4:$config_port ${PLAIN}"
-    elif  -n $v6 && -z $v4 ; then
-        echo -e "Panel IPv6 login address is: ${GREEN}http://[$v6]:$config_port ${PLAIN}"
-    elif  -n $v4 && -n $v6 ; then
-        echo -e "Panel IPv4 login address is: ${GREEN}http://$v4:$config_port ${PLAIN}"
-        echo -e "Panel IPv6 login address is: ${GREEN}http://[$v6]:$config_port ${PLAIN}"
-    fi
-    echo -e "Username: ${GREEN}$config_account ${PLAIN}"
-    echo -e "Password: ${GREEN}$config_password ${PLAIN}"
-}
-
-install_xui $1
+echo -e "${green}Start installing.${plain}"
+install_base
+install_x-ui $1
