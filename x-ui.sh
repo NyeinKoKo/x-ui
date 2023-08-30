@@ -18,48 +18,48 @@ function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
 # check root
-[[ $EUID -ne 0 ]] && LOGE "错误:  必须使用root用户运行此脚本!\n" && exit 1
+[[ $EUID -ne 0 ]] && LOGE "ERROR: You must run this script as root!\n" && exit 1
 
 # check os
 if [[ -f /etc/redhat-release ]]; then
-    release="centos"
+     release="centos"
 elif cat /etc/issue | grep -Eqi "debian"; then
-    release="debian"
+     release="debian"
 elif cat /etc/issue | grep -Eqi "ubuntu"; then
-    release="ubuntu"
+     release="ubuntu"
 elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
-    release="centos"
+     release="centos"
 elif cat /proc/version | grep -Eqi "debian"; then
-    release="debian"
+     release="debian"
 elif cat /proc/version | grep -Eqi "ubuntu"; then
-    release="ubuntu"
+     release="ubuntu"
 elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
-    release="centos"
+     release="centos"
 else
-    LOGE "未检测到系统版本，请联系脚本作者！\n" && exit 1
-fi
+     LOGE "System version not detected, please contact the script author!\n" && exit 1
+the fi
 
 os_version=""
 
 # os version
 if [[ -f /etc/os-release ]]; then
-    os_version=$(awk -F'[= ."]' '/VERSION_ID/{print $3}' /etc/os-release)
-fi
+     os_version=$(awk -F'[= ."]' '/VERSION_ID/{print $3}' /etc/os-release)
+the fi
 if [[ -z "$os_version" && -f /etc/lsb-release ]]; then
-    os_version=$(awk -F'[= ."]+' '/DISTRIB_RELEASE/{print $2}' /etc/lsb-release)
-fi
+     os_version=$(awk -F'[= ."]+' '/DISTRIB_RELEASE/{print $2}' /etc/lsb-release)
+the fi
 
 if [[ x"${release}" == x"centos" ]]; then
-    if [[ ${os_version} -le 6 ]]; then
-        LOGE "请使用 CentOS 7 或更高版本的系统！\n" && exit 1
-    fi
+     if [[ ${os_version} -le 6 ]]; then
+         LOGE "Please use CentOS 7 or higher system!\n" && exit 1
+     the fi
 elif [[ x"${release}" == x"ubuntu" ]]; then
-    if [[ ${os_version} -lt 16 ]]; then
-        LOGE "请使用 Ubuntu 16 或更高版本的系统！\n" && exit 1
-    fi
+     if [[ ${os_version} -lt 16 ]]; then
+         LOGE "Please use Ubuntu 16 or higher system!\n" && exit 1
+     the fi
 elif [[ x"${release}" == x"debian" ]]; then
-    if [[ ${os_version} -lt 8 ]]; then
-        LOGE "请使用 Debian 8 或更高版本的系统！\n" && exit 1
+     if [[ ${os_version} -lt 8 ]]; then
+         LOGE "Please use Debian 8 or higher system!\n" && exit 1
     fi
 fi
 
@@ -80,48 +80,48 @@ confirm() {
 }
 
 confirm_restart() {
-    confirm "是否重启面板，重启面板也会重启 xray" "y"
-    if [[ $? == 0 ]]; then
-        restart
-    else
-        show_menu
-    fi
+     confirm "Whether to restart the panel, restarting the panel will also restart xray" "y"
+     if [[ $? == 0 ]]; then
+         restart
+     else
+         show_menu
+     the fi
 }
 
 before_show_menu() {
-    echo && echo -n -e "${yellow}按回车返回主菜单: ${plain}" && read temp
-    show_menu
+     echo && echo -n -e "${yellow} press Enter to return to the main menu: ${plain}" && read temp
+     show_menu
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
-    if [[ $? == 0 ]]; then
-        if [[ $# == 0 ]]; then
-            start
-        else
-            start 0
-        fi
-    fi
+     bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
+     if [[ $? == 0 ]]; then
+         if [[ $# == 0 ]]; then
+             start
+         else
+             start 0
+         the fi
+     the fi
 }
 
 update() {
-    confirm "本功能会强制重装当前最新版，数据不会丢失，是否继续?" "n"
-    if [[ $? != 0 ]]; then
-        LOGE "已取消"
-        if [[ $# == 0 ]]; then
-            before_show_menu
+     confirm "This function will force the latest version to be reinstalled, and the data will not be lost. Do you want to continue?" "n"
+     if [[ $? != 0 ]]; then
+         LOGE "Cancelled"
+         if [[ $# == 0 ]]; then
+             before_show_menu
         fi
         return 0
     fi
     bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
     if [[ $? == 0 ]]; then
-        LOGI "更新完成，已自动重启面板 "
-        exit 0
-    fi
+        LOGI "Update completed, panel restarted automatically"
+         exit 0
+     the fi
 }
 
 uninstall() {
-    confirm "确定要卸载面板吗,xray 也会卸载?" "n"
+     confirm "Are you sure you want to uninstall the panel, xray will also be uninstalled?" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -137,7 +137,7 @@ uninstall() {
     rm /usr/local/x-ui/ -rf
 
     echo ""
-    echo -e "卸载成功，如果你想删除此脚本，则退出脚本后运行 ${green}rm /usr/bin/x-ui -f${plain} 进行删除"
+    echo -e "The uninstallation is successful. If you want to delete this script, run it after exiting the script ${green}rm /usr/bin/x-ui -f${plain} 进行删除"
     echo ""
 
     if [[ $# == 0 ]]; then
@@ -146,7 +146,7 @@ uninstall() {
 }
 
 reset_user() {
-    confirm "确定要将用户名和密码重置为 admin 吗" "n"
+    confirm "Make sure you want to reset your username and password to admin Is it" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -154,12 +154,12 @@ reset_user() {
         return 0
     fi
     /usr/local/x-ui/x-ui setting -username admin -password admin
-    echo -e "用户名和密码已重置为 ${green}admin${plain}，现在请重启面板"
-    confirm_restart
+    echo -e "Username and password have been reset to ${green}admin${plain}, please restart the panel now"
+     confirm_restart
 }
 
 reset_config() {
-    confirm "确定要重置所有面板设置吗，账号数据不会丢失，用户名和密码不会改变" "n"
+     confirm "Are you sure you want to reset all panel settings, account data will not be lost, user name and password will not change" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -167,7 +167,7 @@ reset_config() {
         return 0
     fi
     /usr/local/x-ui/x-ui setting -reset
-    echo -e "所有面板设置已重置为默认值，现在请重启面板，并使用默认的 ${green}54321${plain} 端口访问面板"
+    echo -e "All panel settings have been reset to default, please restart the panel now and use the default ${green}54321${plain} 端口访问面板"
     confirm_restart
 }
 
@@ -181,7 +181,7 @@ check_config() {
 }
 
 set_port() {
-    echo && echo -n -e "输入端口号[1-65535]: " && read port
+    echo && echo -n -e "Enter port number[1-65535]: " && read port
     if [[ -z "${port}" ]]; then
         LOGD "已取消"
         before_show_menu
