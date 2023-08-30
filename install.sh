@@ -142,18 +142,18 @@ install_x-ui() {
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
     config_after_install
-    #echo -e "如果是全新安装，默认网页端口为 ${green}54321${plain}，用户名和密码默认都是 ${green}admin${plain}"
-    #echo -e "请自行确保此端口没有被其他程序占用，${yellow}并且确保 54321 端口已放行${plain}"
-    #    echo -e "若想将 54321 修改为其它端口，输入 x-ui 命令进行修改，同样也要确保你修改的端口也是放行的"
+    #echo -e "If it is a new installation, the default web port is ${green}54321${plain}, and the default username and password are ${green}admin${plain}"
+    #echo -e "Please ensure that this port is not occupied by other programs, ${yellow} and ensure that port 54321 has been released ${plain}"
+    # echo -e "If you want to modify 54321 to another port, enter the x-ui command to modify, and also make sure that the port you modified is also allowed"
     #echo -e ""
-    #echo -e "如果是更新面板，则按你之前的方式访问面板"
+    #echo -e "If updating the panel, access the panel as you did before"
     #echo -e ""
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
     echo -e "${green}x-ui v${last_version}${plain} The installation is complete and the panel is activated.，"
     echo -e ""
-    echo -e "💛💛Thank you for using.💛💛 "
+    echo -e "💛 💛...Thank you for using...💛 💛 "
     echo -e "----------------------------------------------"
     echo -e "\nProudly developed by ...${yellow}
      _  __         _ _ __                         
